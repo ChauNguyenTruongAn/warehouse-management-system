@@ -2,6 +2,7 @@ package com.github.chaunguyentruongan.warehouse_management_system.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,7 +31,7 @@ public class Material {
 
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "unit_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "unit_id", nullable=false)
     private Unit unit;
 }

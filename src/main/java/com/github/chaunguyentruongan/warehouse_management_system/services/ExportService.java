@@ -10,6 +10,7 @@ import com.github.chaunguyentruongan.warehouse_management_system.dto.ExportReque
 import com.github.chaunguyentruongan.warehouse_management_system.models.ExportItem;
 import com.github.chaunguyentruongan.warehouse_management_system.models.ExportReceipt;
 import com.github.chaunguyentruongan.warehouse_management_system.models.Material;
+import com.github.chaunguyentruongan.warehouse_management_system.repositories.ExportItemRepository;
 import com.github.chaunguyentruongan.warehouse_management_system.repositories.ExportReceiptRepository;
 import com.github.chaunguyentruongan.warehouse_management_system.repositories.MaterialRepository;
 
@@ -20,28 +21,35 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExportService {
 
-    private final MaterialRepository materialRepo;
-    private final ExportReceiptRepository exportRepo;
+    private final ExportReceiptRepository exportReceiptRepository;
+    private final ExportItemRepository exportItemRepository;
+    private final MaterialRepository materialRepository;
+    private final StockService stockService;
 
     @Transactional
-    public void create(ExportRequest request) {
+    public void createExport(ExportRequest request) {
 
         ExportReceipt receipt = new ExportReceipt();
         receipt.setExportDate(request.getExportDate());
         receipt.setRecipient(request.getRecipient());
         receipt.setDepartment(request.getDepartment());
+        receipt.setPurpose(request.getPurpose());
+        receipt.setNote(request.getNote());
 
         List<ExportItem> items = new ArrayList<>();
 
         for (ExportItemRequest itemReq : request.getItems()) {
+            Material material = materialRepository.findById(itemReq.getMaterialId())
+                    .orElseThrow(() -> new RuntimeException("Material not found: " + itemReq.getMaterialId()));
 
-            Material material = materialRepo.findById(itemReq.getMaterialId())
-                    .orElseThrow(() -> new RuntimeException("Material not found"));
+            if (itemReq.getQuantity() <= 0) {
+                throw new RuntimeException("Quantity must be > 0");
+            }
 
-            int stock = getStock(material.getId());
-
+            // Kiểm tra tồn kho trước khi export
+            int stock = stockService.getStock(material.getId());
             if (stock < itemReq.getQuantity()) {
-                throw new RuntimeException("Not enough stock");
+                throw new RuntimeException("Not enough stock for material: " + material.getName());
             }
 
             ExportItem item = new ExportItem();
@@ -50,15 +58,13 @@ public class ExportService {
             item.setReceipt(receipt);
 
             items.add(item);
+
+            // Cập nhật stock
+            stockService.updateStock(material.getId(), -itemReq.getQuantity());
         }
 
         receipt.setItems(items);
-
-        exportRepo.save(receipt);
-    }
-
-    private int getStock(Long materialId) {
-        // TODO: query sum import - export
-        return 100;
+        exportReceiptRepository.save(receipt);
+        exportItemRepository.saveAll(items);
     }
 }
