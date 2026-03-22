@@ -1,27 +1,23 @@
-# Stage 1: Build dự án
-FROM eclipse-temurin:21-jdk-alpine AS build
+# Stage 1: Build dự án bằng image Maven chính thức
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
-# Sao chép các file cấu hình maven và mã nguồn
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
+# Chỉ copy file pom.xml trước để tận dụng cache của Docker cho các dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy mã nguồn và tiến hành build
 COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Cấp quyền thực thi cho mvnw và build dự án (bỏ qua unit test để nhanh hơn)
-RUN chmod +x mvnw && ./mvnw clean package -DskipTests
-
-# Stage 2: Tạo image để chạy (Runtime)
+# Stage 2: Runtime (Chỉ chứa JRE để nhẹ nhất)
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Sao chép file jar đã build từ stage 1 vào stage này
+# Copy file jar từ stage build
 COPY --from=build /app/target/*.jar app.jar
 
-# Khai báo biến môi trường mặc định (có thể ghi đè khi chạy container)
-ENV DB_URL=jdbc:mysql://localhost:3306/cdnsg_db
-ENV DB_USERNAME=root
-ENV DB_PASSWORD=root
-ENV CORS_ORIGINS=http://localhost:5173
 
-# Chạy ứng dụng
+EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
