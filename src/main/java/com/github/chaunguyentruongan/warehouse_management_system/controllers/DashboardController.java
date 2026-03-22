@@ -35,9 +35,9 @@ public class DashboardController {
      */
     @GetMapping("/stock")
     public ResponseEntity<List<StockReportDTO>> stockReport(
-            @RequestParam(defaultValue = "3") int lowStockThreshold) {
+            @RequestParam(defaultValue = "3") int minStock) {
 
-        List<StockReportDTO> report = dashboardService.getStockReport(lowStockThreshold);
+        List<StockReportDTO> report = dashboardService.getStockReport(minStock);
         return ResponseEntity.ok(report);
     }
 

@@ -6,9 +6,15 @@ spring:
       ddl-auto: update
     show-sql: true
   datasource:
-    url: jdbc:mysql://localhost:3306/cdnsg_db
-    username: root
-    password: root
+    # Lấy từ biến môi trường DB_URL, nếu không có sẽ dùng mặc định cdnsg_db
+    url: ${DB_URL:jdbc:mysql://localhost:3306/cdnsg_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
 
 server:
   port: 8080
+
+# Cấu hình tùy chỉnh cho CORS để sử dụng trong code
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}  
