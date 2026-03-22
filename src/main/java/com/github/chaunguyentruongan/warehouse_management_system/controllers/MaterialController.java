@@ -1,19 +1,13 @@
 package com.github.chaunguyentruongan.warehouse_management_system.controllers;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.github.chaunguyentruongan.warehouse_management_system.dto.MaterialRequest;
 import com.github.chaunguyentruongan.warehouse_management_system.models.Material;
-import com.github.chaunguyentruongan.warehouse_management_system.models.Unit;
-import com.github.chaunguyentruongan.warehouse_management_system.repositories.MaterialRepository;
-import com.github.chaunguyentruongan.warehouse_management_system.repositories.UnitRepository;
+import com.github.chaunguyentruongan.warehouse_management_system.services.MaterialService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,26 +16,46 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MaterialController {
 
-    private final MaterialRepository materialRepository;
-    private final UnitRepository unitRepository;
+    private final MaterialService materialService;
 
+    // ===================== CREATE =====================
     @PostMapping
-    public ResponseEntity<?> createMaterial(@RequestBody MaterialRequest request) {
-        Unit unit = unitRepository.findById(request.getUnitId())
-                .orElseThrow(() -> new RuntimeException("Unit not found"));
-        Material material = new Material();
-        material.setCode(request.getCode());
-        material.setName(request.getName());
-        material.setUnit(unit);
-        material.setMinStock(request.getMinStock());
-        material.setDescription(request.getDescription());
-
-        Material saved = materialRepository.save(material);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<Material> createMaterial(@RequestBody MaterialRequest request) {
+        return ResponseEntity.ok(materialService.addMaterial(request));
     }
 
+    // ===================== GET LIST (PAGINATION + SEARCH) =====================
     @GetMapping
-    public ResponseEntity<List<Material>> getAllMaterials() {
-        return ResponseEntity.ok(materialRepository.findAll());
+    public ResponseEntity<Page<Material>> getAllMaterials(
+            @RequestParam(required = false) String keyword,
+            Pageable pageable) {
+
+        if (keyword != null && !keyword.isBlank()) {
+            return ResponseEntity.ok(materialService.searchMaterials(keyword, pageable));
+        }
+
+        return ResponseEntity.ok(materialService.getAllMaterials(pageable));
+    }
+
+    // ===================== GET DETAIL =====================
+    @GetMapping("/{id}")
+    public ResponseEntity<Material> getMaterialById(@PathVariable Long id) {
+        return ResponseEntity.ok(materialService.getMaterialById(id));
+    }
+
+    // ===================== UPDATE =====================
+    @PutMapping("/{id}")
+    public ResponseEntity<Material> updateMaterial(
+            @PathVariable Long id,
+            @RequestBody MaterialRequest request) {
+
+        return ResponseEntity.ok(materialService.updateMaterial(id, request));
+    }
+
+    // ===================== DELETE =====================
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMaterial(@PathVariable Long id) {
+        materialService.deleteMaterial(id);
+        return ResponseEntity.noContent().build();
     }
 }

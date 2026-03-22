@@ -3,14 +3,11 @@ package com.github.chaunguyentruongan.warehouse_management_system.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+// DTO chi tiết
 @Data
 @AllArgsConstructor
-public class StockReportDTO {
-    private Long materialId;
+public class ReceiptDetailDTO {
     private String materialName;
     private String unitName;
-    private int totalImport;
-    private int totalExport;
-    private int stock;
-    private boolean lowStock; // cảnh báo
+    private int quantity;
 }
